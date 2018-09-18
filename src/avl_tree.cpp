@@ -21,7 +21,39 @@ int avl_tree::Insert( string name, int id )
     else
     {
         Compare( nuevo, this->root );
-        Evaluate_k( nuevo );
+        node* Evaluator = Evaluate_k( nuevo );
+
+        if( Evaluator != nullptr )
+        {
+            int var = *this->buffer.begin();
+            switch(var)
+            {
+                case 1:
+                    this->buffer.pop_front();
+                    if( *this->buffer.begin() == 1 )
+                    {
+                        R_Right_Right( Evaluator );
+                    }
+                    else
+                    {
+                        R_Right_Left( Evaluator );
+                    }
+                    this->buffer.erase( this->buffer.begin(), this->buffer.end() );
+                    break;
+                case 0:
+                    this->buffer.pop_front();
+                    if( *this->buffer.begin() == 0 )
+                    {
+                        R_Left_Left( Evaluator );
+                    }
+                    else
+                    {
+                        R_Left_Right( Evaluator );
+                    }
+                    this->buffer.erase( this->buffer.begin(), this->buffer.end() );
+                    break;
+            }
+        }
     }
 }
 
@@ -29,7 +61,6 @@ void avl_tree::Compare( node* new_node, node* current_node)
 {
     if( new_node->id > current_node->id )
     {
-        current_node->K_balance = ( current_node->K_balance ) + 1;
         if( current_node->Right_Child != nullptr )
         {
             Compare( new_node, current_node->Right_Child );
@@ -38,7 +69,8 @@ void avl_tree::Compare( node* new_node, node* current_node)
         {
             new_node->Parent = current_node;
             current_node->Right_Child = new_node;
-            if( current_node->Left_Child != nullptr )
+            current_node->R_max_height = current_node->R_max_height + 1;
+            if( current_node->Left_Child == nullptr )
             {
                 Fix_k( new_node->Parent );
             }
@@ -46,7 +78,6 @@ void avl_tree::Compare( node* new_node, node* current_node)
     }
     else
     {
-        current_node->K_balance = ( current_node->K_balance ) - 1;
         if(  current_node->Left_Child != nullptr )
         {
             Compare( new_node, current_node->Left_Child );
@@ -55,7 +86,8 @@ void avl_tree::Compare( node* new_node, node* current_node)
         {
             new_node->Parent = current_node;
             current_node->Left_Child = new_node;
-            if( current_node->Right_Child != nullptr )
+            current_node->L_max_height = current_node->L_max_height + 1;
+            if( current_node->Right_Child == nullptr )
             {
                 Fix_k( new_node->Parent );
             }
@@ -67,13 +99,19 @@ void avl_tree::Fix_k( node* new_node )
 {
     if( new_node->Parent != nullptr )
     {
-        if( new_node->Parent->Right_Child->id == new_node->id )
+        if( new_node->Parent->Right_Child != nullptr )
         {
-            new_node->Parent->K_balance = ( new_node->Parent->K_balance ) -1;
+            if( new_node->Parent->Right_Child->id == new_node->id )
+            {
+                new_node->Parent->R_max_height = max( new_node->R_max_height, new_node->L_max_height ) + 1;
+            }
         }
-        else
+        if( new_node->Parent->Left_Child != nullptr )
         {
-            new_node->Parent->K_balance = ( new_node->Parent->K_balance ) +1;
+            if( new_node->Parent->Left_Child->id == new_node->id )
+            {
+                new_node->Parent->L_max_height = max( new_node->R_max_height, new_node->L_max_height ) + 1;
+            }
         }
         Fix_k( new_node->Parent );
     }
@@ -81,25 +119,32 @@ void avl_tree::Fix_k( node* new_node )
 
 node* avl_tree::Evaluate_k( node* new_node )
 {
-    if( ( new_node->K_balance < -1 ) || ( new_node->K_balance > 1 ) )
+    int k = (new_node->R_max_height) - (new_node->L_max_height);
+    if( ( k < -1 ) || ( k > 1 ) )
     {
         cout << "Error de K" << endl;
         cout << new_node->name << new_node->id << endl;
-        return nullptr;
+        return new_node;
     }
     else
     {
         if( new_node->Parent != nullptr )
         {
+            if( new_node->Parent->Right_Child == new_node )
+            {
+                this->buffer.push_front(1);
+            }
+            else{
+                this->buffer.push_front(0);
+            }
             Evaluate_k( new_node->Parent );
         }
-        return nullptr;
     }
 }
 
-node* avl_tree::R_Left_Left( node *y )
+node* avl_tree::R_Right_Right( node* y )
 {
-    node *x = y->Right_Child;
+    node* x = y->Right_Child;
     x->Parent = y->Parent;
     y->Right_Child = x->Left_Child;
 
@@ -123,13 +168,20 @@ node* avl_tree::R_Left_Left( node *y )
         }
     }
 
-    //Calculate_K( root );
+    if( y->Right_Child == nullptr )
+    {
+        y->R_max_height = 0;
+    }
+    else
+    {
+        y->R_max_height = max( y->Right_Child->L_max_height, y->Right_Child->R_max_height ) + 1;
+    }
 
+    Fix_k( y );
     return x;
-
 }
 
-node* avl_tree::R_Right_Right( node *y )
+node* avl_tree::R_Left_Left( node *y )
 {
     node *x = y->Left_Child;
     x->Parent = y->Parent;
@@ -155,10 +207,17 @@ node* avl_tree::R_Right_Right( node *y )
         }
     }
 
-    //Calculate_K( root );
+    if( y->Left_Child == nullptr )
+    {
+        y->L_max_height = 0;
+    }
+    else
+    {
+        y->L_max_height = max( y->Left_Child->L_max_height, y->Left_Child->R_max_height ) + 1;
+    }
 
+    Fix_k( y );
     return x;
-
 }
 
 node* avl_tree::R_Right_Left( node *z )
@@ -173,30 +232,27 @@ node* avl_tree::R_Left_Right( node *z )
       return R_Right_Right( z );
 }
 
-bool avl_tree::Calculate_K( node *n )
+void avl_tree::Print( node* start, int contador)
 {
-    n->K_balance = H_max( n->Right_Child ) - H_max( n->Left_Child );
-    if( n->Left_Child != nullptr || n->Right_Child != nullptr )
+    if( start == nullptr )
     {
-        Calculate_K( n->Left_Child );
-        Calculate_K( n->Right_Child );
+        for(int i = 0; i < contador; i++ )
+        {
+            cout << "      ";
+        }
+        cout << "null" << endl;
+        return;
     }
     else
     {
-        n->K_balance = 0;
-        return true;
-    }
-}
-
-int avl_tree::H_max( node *n )
-{
-    if( n->Left_Child != nullptr || n->Right_Child != nullptr)
-    {
-        return max(H_max(n->Left_Child), H_max(n->Left_Child));
-    }
-    else
-    {
-        return n->Height;
+        Print( start->Right_Child, contador + 2 );
+        for(int i = 0; i < contador; i++ )
+        {
+            cout << "        ";
+        }
+        int temp = start->R_max_height - start->L_max_height;
+        cout << start->name << "-" << start->id << "(" << temp << ")" << endl;
+        Print( start->Left_Child, contador + 2 );
     }
 }
 
@@ -206,19 +262,15 @@ int main()
 {
     avl_tree my_tree;
     my_tree.Insert( "juan", 50 );
-    cout << my_tree.root->K_balance << endl;
     my_tree.Insert( "jose", 25 );
-    cout << my_tree.root->K_balance << endl;
     my_tree.Insert( "luis", 80 );
-    cout << my_tree.root->K_balance << endl;
     my_tree.Insert( "ana", 10 );
-    cout << my_tree.root->K_balance << endl;
     my_tree.Insert( "maria", 70 );
-    cout << my_tree.root->K_balance << endl;
     my_tree.Insert( "paola", 90 );
-    cout << my_tree.root->K_balance << endl;
     my_tree.Insert( "jazmin", 65 );
-    cout << my_tree.root->K_balance << endl;
+    my_tree.Print( my_tree.root, 0 );
     my_tree.Insert( "valeria", 60 );
-    cout << my_tree.root->K_balance << endl;
+    //my_tree.Insert( "Marco", 100 );
+    //my_tree.Insert( "Giselle", 110 );
+    my_tree.Print( my_tree.root, 0 );
 }
