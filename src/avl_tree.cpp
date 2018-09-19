@@ -55,6 +55,7 @@ int avl_tree::Insert( string name, int id )
             }
         }
     }
+    return 0;
 }
 
 void avl_tree::Compare( node* new_node, node* current_node)
