@@ -1,26 +1,95 @@
-#include "../include/avl_tree.hpp"
+#include "avl_tree.hpp"
 
 avl_tree::avl_tree( void )
     : root( nullptr )
 {
 }
 
-avl_tree::~avl_tree( void )
+avl_tree::avl_tree( string path )
 {
-    delete root;
+    root = nullptr;
+    string linea;
+    ifstream ficheroEntrada;
+
+    string name = "X0X";
+    string id = "X0X";
+    int number;
+
+    ficheroEntrada.open( path );
+    while( std::getline( ficheroEntrada, linea ) )
+    {
+        std::stringstream stream(linea);
+        string frase;
+
+        while( getline(stream, frase, ','))
+        {
+            if( name == "X0X" )
+            {
+                name = frase;
+            }
+            else
+            {
+                id = frase;
+                number = stoi( id );
+                this->avl_tree_insert( name, number );
+                name = "X0X";
+                id = "X0X";
+            }
+        }
+    }
+
+    ficheroEntrada.close();
 }
 
-int avl_tree::Insert( string name, int id )
+avl_tree::~avl_tree( void )
+{
+    if( this->root->Right_Child != nullptr || this->root->Left_Child != nullptr )
+    {
+
+    }
+    else
+    {
+        avl_tree_empty( this->root );
+        delete root;
+    }
+}
+
+void avl_tree::avl_tree_empty( node* x )
+{
+    if( x != nullptr )
+    {
+        avl_tree_empty( x->Right_Child );
+        avl_tree_empty( x->Left_Child );
+        delete x;
+    }
+}
+
+int avl_tree::avl_tree_get_max_height( void )
+{
+    return max( root->R_max_height, root->L_max_height ) + 1;
+}
+
+int avl_tree::avl_tree_get_size( void )
+{
+    return size;
+}
+
+int avl_tree::avl_tree_insert( string name, int id )
 {
     node* nuevo = new node( name, id, nullptr);
 
     if( this->root == nullptr )
     {
         this->root = nuevo;
+        size = size + 1;
     }
     else
     {
-        Compare( nuevo, this->root );
+        if( Compare( nuevo, this->root ) )
+        {
+            cout << "Error id ya existe" << endl;
+            return 1;
+        }
         node* Evaluator = Evaluate_k( nuevo );
 
         if( Evaluator != nullptr )
@@ -54,17 +123,21 @@ int avl_tree::Insert( string name, int id )
                     break;
             }
         }
+        size = size + 1;
     }
     return 0;
 }
 
-void avl_tree::Compare( node* new_node, node* current_node)
+int avl_tree::Compare( node* new_node, node* current_node)
 {
     if( new_node->id > current_node->id )
     {
         if( current_node->Right_Child != nullptr )
         {
-            Compare( new_node, current_node->Right_Child );
+            if( Compare( new_node, current_node->Right_Child ) )
+            {
+                return 1;
+            }
         }
         else
         {
@@ -77,11 +150,14 @@ void avl_tree::Compare( node* new_node, node* current_node)
             }
         }
     }
-    else
+    else if( new_node->id < current_node->id )
     {
         if(  current_node->Left_Child != nullptr )
         {
-            Compare( new_node, current_node->Left_Child );
+            if( Compare( new_node, current_node->Left_Child ) )
+            {
+                return 1;
+            }
         }
         else
         {
@@ -94,6 +170,11 @@ void avl_tree::Compare( node* new_node, node* current_node)
             }
         }
     }
+    else
+    {
+        return 1;
+    }
+    return 0;
 }
 
 void avl_tree::Fix_k( node* new_node )
@@ -123,8 +204,6 @@ node* avl_tree::Evaluate_k( node* new_node )
     int k = (new_node->R_max_height) - (new_node->L_max_height);
     if( ( k < -1 ) || ( k > 1 ) )
     {
-        cout << "Error de K" << endl;
-        cout << new_node->name << new_node->id << endl;
         return new_node;
     }
     else
@@ -135,105 +214,120 @@ node* avl_tree::Evaluate_k( node* new_node )
             {
                 this->buffer.push_front(1);
             }
-            else{
+            else
+            {
                 this->buffer.push_front(0);
             }
-            Evaluate_k( new_node->Parent );
-        }
-    }
-}
-
-node* avl_tree::R_Right_Right( node* y )
-{
-    node* x = y->Right_Child;
-    x->Parent = y->Parent;
-    y->Right_Child = x->Left_Child;
-
-    if(y->Right_Child != nullptr)
-    {
-        y->Right_Child->Parent = y;
-    }
-
-    x->Left_Child = y;
-    y->Parent = x;
-
-    if(x->Parent != nullptr)
-    {
-        if(x->Parent->Left_Child == y)
-        {
-            x->Parent->Left_Child = x;
+            return Evaluate_k( new_node->Parent );
         }
         else
         {
-            x->Parent->Right_Child = x;
+            return nullptr;
         }
     }
-
-    if( y->Right_Child == nullptr )
-    {
-        y->R_max_height = 0;
-    }
-    else
-    {
-        y->R_max_height = max( y->Right_Child->L_max_height, y->Right_Child->R_max_height ) + 1;
-    }
-
-    Fix_k( y );
-    return x;
 }
 
-node* avl_tree::R_Left_Left( node *y )
+void avl_tree::R_Right_Right( node* z )
 {
-    node *x = y->Left_Child;
-    x->Parent = y->Parent;
-    y->Left_Child = x->Right_Child;
+    node* y = z->Right_Child;
+    y->Parent = z->Parent;
+    z->Right_Child = y->Left_Child;
 
-    if(y->Left_Child != nullptr)
+    if(z->Right_Child != nullptr)
     {
-        y->Left_Child->Parent = y;
+        z->Right_Child->Parent = z;
     }
 
-    x->Right_Child = y;
-    y->Parent = x;
+    y->Left_Child = z;
+    z->Parent = y;
 
-    if(x->Parent != nullptr)
+    if(y->Parent != nullptr)
     {
-        if(x->Parent->Left_Child == y)
+        if(y->Parent->Left_Child == z)
         {
-            x->Parent->Left_Child = x;
+            y->Parent->Left_Child = y;
         }
         else
         {
-            x->Parent->Right_Child = x;
+            y->Parent->Right_Child = y;
         }
-    }
-
-    if( y->Left_Child == nullptr )
-    {
-        y->L_max_height = 0;
     }
     else
     {
-        y->L_max_height = max( y->Left_Child->L_max_height, y->Left_Child->R_max_height ) + 1;
+        this->root = y;
     }
 
-    Fix_k( y );
-    return x;
+    if( z->Right_Child == nullptr )
+    {
+        z->R_max_height = 0;
+    }
+    else
+    {
+        z->R_max_height = max( z->Right_Child->L_max_height, z->Right_Child->R_max_height ) + 1;
+    }
+
+    y->L_max_height = max( z->R_max_height, z->L_max_height ) + 1;
+
+    //Fix_k( z ); //TODO: Check if it is necessary
 }
 
-node* avl_tree::R_Right_Left( node *z )
+void avl_tree::R_Left_Left( node *z )
 {
-      z->Right_Child = R_Right_Right( z->Right_Child );
-      return R_Left_Left( z );
+    node *y = z->Left_Child;
+    y->Parent = z->Parent;
+    z->Left_Child = y->Right_Child;
+
+    if(z->Left_Child != nullptr)
+    {
+        z->Left_Child->Parent = z;
+    }
+
+    y->Right_Child = z;
+    z->Parent = y;
+
+    if(y->Parent != nullptr)
+    {
+        if(y->Parent->Left_Child == z)
+        {
+            y->Parent->Left_Child = y;
+        }
+        else
+        {
+            y->Parent->Right_Child = y;
+        }
+    }
+    else
+    {
+        this->root = y;
+    }
+
+    if( z->Left_Child == nullptr )
+    {
+        z->L_max_height = 0;
+    }
+    else
+    {
+        z->L_max_height = max( z->Left_Child->L_max_height, z->Left_Child->R_max_height ) + 1;
+    }
+
+    y->R_max_height = max( z->R_max_height, z->L_max_height ) + 1;
+
+    //Fix_k( z ); //TODO: Check if it is necessary
 }
 
-node* avl_tree::R_Left_Right( node *z )
+void avl_tree::R_Right_Left( node *z )
 {
-      z->Left_Child = R_Left_Left( z->Left_Child );
-      return R_Right_Right( z );
+      R_Left_Left( z->Right_Child );
+      R_Right_Right( z );
 }
 
-void avl_tree::Print( node* start, int contador)
+void avl_tree::R_Left_Right( node *z )
+{
+      R_Right_Right( z->Left_Child );
+      R_Left_Left( z );
+}
+
+void avl_tree::avl_tree_print( node* start, int contador)
 {
     if( start == nullptr )
     {
@@ -246,32 +340,45 @@ void avl_tree::Print( node* start, int contador)
     }
     else
     {
-        Print( start->Right_Child, contador + 2 );
+        avl_tree_print( start->Right_Child, contador + 2 );
         for(int i = 0; i < contador; i++ )
         {
             cout << "        ";
         }
         int temp = start->R_max_height - start->L_max_height;
         cout << start->name << "-" << start->id << "(" << temp << ")" << endl;
-        Print( start->Left_Child, contador + 2 );
+        avl_tree_print( start->Left_Child, contador + 2 );
     }
 }
 
-using namespace std;
-
-int main()
+node* avl_tree::avl_tree_find_max( node* x )
 {
-    avl_tree my_tree;
-    my_tree.Insert( "juan", 50 );
-    my_tree.Insert( "jose", 25 );
-    my_tree.Insert( "luis", 80 );
-    my_tree.Insert( "ana", 10 );
-    my_tree.Insert( "maria", 70 );
-    my_tree.Insert( "paola", 90 );
-    my_tree.Insert( "jazmin", 65 );
-    my_tree.Print( my_tree.root, 0 );
-    my_tree.Insert( "valeria", 60 );
-    //my_tree.Insert( "Marco", 100 );
-    //my_tree.Insert( "Giselle", 110 );
-    my_tree.Print( my_tree.root, 0 );
+    if( x == nullptr )
+    {
+        return nullptr;
+    }
+    else if( x->Right_Child == nullptr )
+    {
+        return x;
+    }
+    else
+    {
+        return avl_tree_find_max(x->Right_Child);
+    }
+}
+
+node* avl_tree::avl_tree_find_min( node* x )
+{
+    if( x == nullptr )
+    {
+        return nullptr;
+    }
+    else if( x->Left_Child == nullptr )
+    {
+        return x;
+    }
+    else
+    {
+        return avl_tree_find_min(x->Left_Child);
+    }
 }
