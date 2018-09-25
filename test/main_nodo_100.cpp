@@ -24,7 +24,7 @@ int main()
     t1 = clock();
     double time = (double(t1-t0)/CLOCKS_PER_SEC);
 
-    ofstream fs2( "../misc/data/running_times.txt" );
+    ofstream fs2( "../misc/data/run_time_100.txt" );
     fs2 << "Execution Time 100 nodos: " << time << endl;
     fs2.close();
 }

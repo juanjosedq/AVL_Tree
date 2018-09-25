@@ -30,8 +30,15 @@ avl_tree::avl_tree( string path )
             else
             {
                 id = frase;
-                number = stoi( id );
-                this->avl_tree_insert( name, number );
+                if( id.size() < 11 )
+                {
+                    number = stoi( id );
+                    this->avl_tree_insert( name, number );
+                }
+                else
+                {
+                    cout << "Error, id inválido" << endl;
+                }
                 name = "X0X";
                 id = "X0X";
             }
@@ -121,6 +128,7 @@ int avl_tree::avl_tree_insert( string name, int id )
                     }
                     this->buffer.erase( this->buffer.begin(), this->buffer.end() );
                     break;
+                default: {}
             }
         }
         size = size + 1;
@@ -268,12 +276,12 @@ void avl_tree::R_Right_Right( node* z )
 
     y->L_max_height = max( z->R_max_height, z->L_max_height ) + 1;
 
-    //Fix_k( z ); //TODO: Check if it is necessary
+    Fix_k( z ); //TODO: Check if it is necessary
 }
 
-void avl_tree::R_Left_Left( node *z )
+void avl_tree::R_Left_Left( node* z )
 {
-    node *y = z->Left_Child;
+    node* y = z->Left_Child;
     y->Parent = z->Parent;
     z->Left_Child = y->Right_Child;
 
@@ -312,16 +320,16 @@ void avl_tree::R_Left_Left( node *z )
 
     y->R_max_height = max( z->R_max_height, z->L_max_height ) + 1;
 
-    //Fix_k( z ); //TODO: Check if it is necessary
+    Fix_k( z ); //TODO: Check if it is necessary
 }
 
-void avl_tree::R_Right_Left( node *z )
-{
+void avl_tree::R_Right_Left( node* z )
+{   
       R_Left_Left( z->Right_Child );
       R_Right_Right( z );
 }
 
-void avl_tree::R_Left_Right( node *z )
+void avl_tree::R_Left_Right( node* z )
 {
       R_Right_Right( z->Left_Child );
       R_Left_Left( z );
