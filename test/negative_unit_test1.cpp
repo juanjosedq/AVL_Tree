@@ -13,8 +13,9 @@ int main()
     my_tree.avl_tree_insert("name", 25);
     my_tree.avl_tree_insert("name", 80);
 
-    //Imprimir elemento repetido
+    //Agregar elemento repetido
     my_tree.avl_tree_insert("name", 50);
     my_tree.avl_tree_insert("name", 25);
 
+    avl_tree my_tree2( "../misc/input/lista_10000.txt" );
 }
